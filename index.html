@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mundial 2026 — Dashboard de Análisis</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #e0e6f0; min-height: 100vh; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #0f1923 0%, #1a2a3a 100%); border-radius: 16px; padding: 30px 35px; margin-bottom: 24px; border: 1px solid #1e3a5f; position: relative; overflow: hidden; }
+.header::before { content: ''; position: absolute; top: 0; right: 0; width: 300px; height: 100%; background: radial-gradient(ellipse at center, rgba(0,100,255,0.08) 0%, transparent 70%); }
+.header h1 { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #f0c040, #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header p { color: #8899aa; font-size: 14px; margin-top: 6px; }
+.header .badge { display: inline-block; background: #1e3a5f; padding: 4px 12px; border-radius: 20px; font-size: 12px; color: #6af; margin-top: 10px; }
+
+/* Stats Grid */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: #111b28; border-radius: 12px; padding: 20px; border: 1px solid #1a2d44; }
+.stat-card .label { color: #667; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.stat-card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+.stat-card .sub { font-size: 12px; color: #667; margin-top: 2px; }
+
+/* Navigation */
+.tabs { display: flex; gap: 4px; margin-bottom: 24px; background: #111b28; border-radius: 12px; padding: 4px; border: 1px solid #1a2d44; flex-wrap: wrap; }
+.tab { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500; color: #667; transition: all .2s; border: none; background: none; font-family: 'Inter', sans-serif; }
+.tab:hover { color: #cde; background: #1a2d44; }
+.tab.active { color: #fff; background: #1e3a5f; }
+
+/* Panel */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Group Tables */
+.groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.group-card { background: #111b28; border-radius: 12px; border: 1px solid #1a2d44; overflow: hidden; }
+.group-card h3 { padding: 14px 18px; font-size: 15px; font-weight: 700; background: #0f1923; border-bottom: 1px solid #1a2d44; }
+.group-card h3 .group-letter { color: #f0c040; }
+.group-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.group-table th { padding: 8px 6px; text-align: left; color: #667; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1a2d44; }
+.group-table th:first-child { padding-left: 18px; width: 32px; }
+.group-table th:nth-child(2) { }
+.group-table th:not(:first-child):not(:nth-child(2)) { text-align: center; width: 28px; }
+.group-table td { padding: 10px 6px; border-bottom: 1px solid #0f1923; }
+.group-table td:first-child { padding-left: 18px; color: #667; font-weight: 500; }
+.group-table td:nth-child(2) { font-weight: 600; }
+.group-table td:not(:first-child):not(:nth-child(2)) { text-align: center; }
+.group-table .qualified td { background: rgba(0,200,100,0.04); }
+.group-table .qualified .pos-badge { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 50%; background: rgba(0,200,100,0.15); color: #0c6; font-size: 11px; font-weight: 700; }
+.group-table .eighth-place { color: #f0c040 !important; }
+.group-table tr:last-child td { border-bottom: none; }
+
+/* Value Bet Finder */
+.value-section { background: #111b28; border-radius: 12px; border: 1px solid #1a2d44; padding: 24px; margin-bottom: 20px; }
+.value-section h2 { font-size: 18px; margin-bottom: 16px; }
+.value-section h2 .accent { color: #f0c040; }
+.value-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .value-grid { grid-template-columns: 1fr; } }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; color: #667; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select { width: 100%; padding: 10px 14px; background: #0f1923; border: 1px solid #1a2d44; border-radius: 8px; color: #e0e6f0; font-size: 14px; font-family: 'Inter', sans-serif; }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: #2a4a7f; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-calc { width: 100%; padding: 12px; background: linear-gradient(135deg, #f0c040, #ff8c00); border: none; border-radius: 8px; color: #0a0e17; font-weight: 700; font-size: 14px; cursor: pointer; transition: transform .15s; font-family: 'Inter', sans-serif; }
+.btn-calc:hover { transform: translateY(-1px); }
+.btn-calc:active { transform: translateY(0); }
+
+/* Results */
+.result-card { background: #0f1923; border-radius: 10px; padding: 16px; margin-top: 14px; border: 1px solid #1a2d44; }
+.result-good { border-left: 4px solid #0c6; }
+.result-bad { border-left: 4px solid #e44; }
+.result-warn { border-left: 4px solid #f0c040; }
+.result-card h4 { font-size: 14px; margin-bottom: 8px; }
+.result-card .big-num { font-size: 36px; font-weight: 800; }
+.result-card .big-num.positive { color: #0c6; }
+.result-card .big-num.negative { color: #e44; }
+.result-card .detail { color: #8899aa; font-size: 13px; margin-top: 4px; }
+.result-card .bar-container { margin-top: 12px; height: 8px; background: #1a2d44; border-radius: 4px; overflow: hidden; }
+.result-card .bar-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+
+.ranking-card { background: #111b28; border-radius: 10px; padding: 16px; border: 1px solid #1a2d44; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.ranking-card .rank-num { font-size: 24px; font-weight: 800; color: #f0c040; min-width: 40px; }
+.ranking-card .team-name { font-weight: 600; flex: 1; }
+.ranking-card .rating { color: #6af; font-weight: 500; }
+.ranking-card .odds-input { width: 100px; padding: 6px 10px; background: #0f1923; border: 1px solid #1a2d44; border-radius: 6px; color: #e0e6f0; text-align: center; font-size: 14px; }
+.ranking-card .value-badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.ranking-card .value-badge.good { background: rgba(0,200,100,0.15); color: #0c6; }
+.ranking-card .value-badge.bad { background: rgba(200,50,50,0.15); color: #e44; }
+
+.match-card { background: #111b28; border-radius: 12px; border: 1px solid #1a2d44; padding: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.match-card .teams { flex: 1; font-size: 15px; font-weight: 600; }
+.match-card .teams .vs { color: #667; font-weight: 400; font-size: 13px; }
+.match-card .prob-bar { flex: 1; min-width: 150px; }
+.match-card .prob-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 11px; }
+.match-card .prob-row .bar { flex: 1; height: 6px; background: #1a2d44; border-radius: 3px; overflow: hidden; }
+.match-card .prob-row .bar-fill { height: 100%; border-radius: 3px; }
+.match-card .prob-row .pct { width: 30px; text-align: right; font-weight: 600; color: #8899aa; }
+.match-card .match-status { font-size: 11px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.match-card .match-status.live { background: rgba(200,50,50,0.2); color: #e44; }
+.match-card .match-status.upcoming { background: rgba(0,200,100,0.1); color: #0c6; }
+
+.info-note { background: rgba(240,192,64,0.08); border: 1px solid rgba(240,192,64,0.2); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #cba; margin-bottom: 16px; }
+.info-note strong { color: #f0c040; }
+
+.instructions { background: #0f1923; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; border: 1px solid #1a2d44; font-size: 13px; line-height: 1.6; color: #8899aa; }
+.instructions strong { color: #cde; }
+.instructions code { background: #1a2d44; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+footer { text-align: center; padding: 30px; color: #445; font-size: 12px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeIn .3s ease-out; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>⚽ Mundial 2026 — Dashboard de Análisis</h1>
+  <p>Datos oficiales FIFA · Análisis de valor esperado · Identificador de Value Bets</p>
+  <div class="badge">📅 24 de Junio, 2026 · Fase de Grupos</div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('groups')">📊 Tabla de Grupos</button>
+  <button class="tab" onclick="switchTab('value')">🎯 Value Bet Finder</button>
+  <button class="tab" onclick="switchTab('matches')">📅 Próximos Partidos</button>
+  <button class="tab" onclick="switchTab('rankings')">🏆 Ranking FIFA</button>
+  <button class="tab" onclick="switchTab('bankroll')">💰 Bankroll Manager</button>
+</div>
+
+<!-- ============ GROUPS PANEL ============ -->
+<div id="panel-groups" class="panel active animate-in">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Equipos</div><div class="value" style="color:#6af">48</div><div class="sub">12 grupos de 4</div></div>
+    <div class="stat-card"><div class="label">Clasificados a 8vos</div><div class="value" id="qualifiedCount" style="color:#0c6">—</div><div class="sub">1° y 2° + mejores 3ros</div></div>
+    <div class="stat-card"><div class="label">Partidos jugados</div><div class="value" id="playedCount" style="color:#f0c040">—</div><div class="sub">de 104 totales</div></div>
+    <div class="stat-card"><div class="label">Promedio goles</div><div class="value" id="avgGoals" style="color:#ff6b35">—</div><div class="sub">por partido</div></div>
+  </div>
+  <div class="groups-grid" id="groupsContainer"></div>
+</div>
+
+<!-- ============ VALUE BET PANEL ============ -->
+<div id="panel-value" class="panel animate-in">
+  <div class="instructions">
+    <strong>🎯 ¿Cómo usar esto?</strong><br>
+    1. Buscá un partido en tu casa de apuestas<br>
+    2. Ingresá las cuotas que ofrecen (decimales: ej. 1.20, 5.50)<br>
+    3. Ingresá tu <strong>probabilidad estimada</strong> (0-100%) basada en datos, forma, historial<br>
+    4. El dashboard te dice si hay <strong>Value (Valor Esperado Positivo)</strong> ✅ o no ❌<br><br>
+    <strong>⚠️ Importante:</strong> La casa siempre tiene margen. Solo apostá cuando tu estimación de probabilidad sea <em>mayor</em> que la probabilidad implícita de la cuota.
+  </div>
+
+  <div class="value-grid">
+    <div class="value-section">
+      <h2>🔍 Calculadora de <span class="accent">Value Bet</span></h2>
+      <div class="form-group">
+        <label>Equipo Local</label>
+        <input type="text" id="vbHome" placeholder="Ej: Argentina" value="Argentina">
+      </div>
+      <div class="form-group">
+        <label>Equipo Visitante</label>
+        <input type="text" id="vbAway" placeholder="Ej: Jordania" value="Jordania">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cuota Local (decimal)</label>
+          <input type="number" id="vbOddsHome" step="0.01" min="1.01" value="1.20">
+        </div>
+        <div class="form-group">
+          <label>Cuota Empate</label>
+          <input type="number" id="vbOddsDraw" step="0.01" min="1.01" value="5.50">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cuota Visitante</label>
+          <input type="number" id="vbOddsAway" step="0.01" min="1.01" value="15.00">
+        </div>
+        <div class="form-group">
+          <label>% a apostar del bankroll</label>
+          <input type="number" id="vbKelly" step="0.5" min="0.5" max="20" value="2">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tu pronóstico — Probabilidad Local (%)</label>
+        <input type="number" id="vbProbHome" step="0.5" min="0" max="100" value="85">
+      </div>
+      <div class="form-group">
+        <label>Tu pronóstico — Probabilidad Empate (%)</label>
+        <input type="number" id="vbProbDraw" step="0.5" min="0" max="100" value="10">
+      </div>
+      <div class="form-group">
+        <label>Tu pronóstico — Probabilidad Visitante (%)</label>
+        <input type="number" id="vbProbAway" step="0.5" min="0" max="100" value="5">
+      </div>
+      <button class="btn-calc" onclick="calcValueBet()">📊 Calcular Value Bet</button>
+    </div>
+
+    <div>
+      <div class="value-section" id="vbResults" style="display:none;">
+        <h2>📈 Resultado del <span class="accent">Análisis</span></h2>
+        <div id="vbResultContent"></div>
+      </div>
+      <div class="value-section" style="margin-top:0;">
+        <h2>💡 <span class="accent">Explicación</span></h2>
+        <div style="font-size:13px;color:#8899aa;line-height:1.7;">
+          <p><strong>Value Bet</strong> = cuando tu probabilidad estimada es MAYOR que la probabilidad implícita en la cuota de la casa.</p><br>
+          <p><strong>Fórmula:</strong> Value = (Cuota × Tu Probabilidad) − 1</p>
+          <p>Si Value > 0 → ✅ Tiene Valor Esperado Positivo</p>
+          <p>Si Value &lt; 0 → ❌ No tiene valor, la casa tiene el edge</p><br>
+          <p><strong>Ejemplo:</strong> Argentina @1.20 → casa estima 83.3%. Si creés que gana 92% → Value = (1.20 × 0.92) − 1 = <strong style="color:#0c6">+10.4% ✅</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MATCHES PANEL ============ -->
+<div id="panel-matches" class="panel animate-in">
+  <div class="value-section">
+    <h2>📅 Partidos de Hoy — <span class="accent">24 de Junio</span></h2>
+    <div class="info-note">⚡ Últimos partidos de fase de grupos. Probabilidades estimadas por ranking FIFA.</div>
+    <div id="todaysMatches"></div>
+  </div>
+  <div class="value-section">
+    <h2>📋 Últimos <span class="accent">Resultados</span></h2>
+    <div id="recentResults"></div>
+  </div>
+</div>
+
+<!-- ============ RANKINGS PANEL ============ -->
+<div id="panel-rankings" class="panel animate-in">
+  <div class="value-section">
+    <h2>🏆 Ranking Mundial FIFA — <span class="accent">2026</span></h2>
+    <div class="info-note">Ingresá las cuotas de tu casa de apuestas y te mostramos si hay value basado en el ranking FIFA.</div>
+    <div id="rankingsList"></div>
+  </div>
+</div>
+
+<!-- ============ BANKROLL PANEL ============ -->
+<div id="panel-bankroll" class="panel animate-in">
+  <div class="value-section">
+    <h2>💰 <span class="accent">Bankroll Manager</span></h2>
+    <div class="instructions">
+      <strong>📐 Criterio de Kelly</strong> — La fórmula matemática para maximizar el crecimiento de tu bankroll a largo plazo.<br>
+      <strong>Kelly Stake (%) = ( (Cuota × Probabilidad) − 1 ) / (Cuota − 1)</strong><br><br>
+      <strong>⚠️ Recomendación:</strong> Usar Kelly Fraccionario (25-50%) para reducir volatilidad. Nunca más del 5% del bankroll en una apuesta.
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Bankroll Total ($)</label>
+        <input type="number" id="brAmount" value="1000" step="100">
+      </div>
+      <div class="form-group">
+        <label>Cuota (decimal)</label>
+        <input type="number" id="brOdds" step="0.01" min="1.01" value="2.00">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tu Probabilidad Estimada (%)</label>
+        <input type="number" id="brProb" step="0.5" min="0" max="100" value="55">
+      </div>
+      <div class="form-group">
+        <label>Fracción de Kelly (25-100%)</label>
+        <input type="number" id="brFraction" value="50" step="5" min="25" max="100">
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calcBankroll()">📊 Calcular Apuesta</button>
+    <div id="brResult" style="display:none;margin-top:16px;"></div>
+  </div>
+</div>
+
+<footer>Dashboard informativo · Datos de FIFA.com · No es asesoría financiera · Apuestas con responsabilidad</footer>
+</div>
+
+<script>
+// ============ FIFA World Cup 2026 — GROUP STANDINGS ============
+const GROUPS = {
+  A: { teams: [
+    { name: 'México', p:2, w:2, d:0, l:0, gf:3, ga:0, gd:3, pts:6, qual:true },
+    { name: 'Corea del Sur', p:2, w:1, d:0, l:1, gf:2, ga:2, gd:0, pts:3, qual:false },
+    { name: 'Rep. Checa', p:2, w:0, d:1, l:1, gf:2, ga:3, gd:-1, pts:1, qual:false },
+    { name: 'Sudáfrica', p:2, w:0, d:1, l:1, gf:1, ga:3, gd:-2, pts:1, qual:false }
+  ]},
+  B: { teams: [
+    { name: 'Canadá', p:3, w:1, d:2, l:0, gf:7, ga:1, gd:6, pts:5, qual:true },
+    { name: 'Suiza', p:3, w:1, d:2, l:0, gf:5, ga:2, gd:3, pts:5, qual:true },
+    { name: 'Bosnia y Herz.', p:3, w:1, d:1, l:1, gf:4, ga:5, gd:-1, pts:4, qual:false },
+    { name: 'Qatar', p:3, w:0, d:1, l:2, gf:1, ga:9, gd:-8, pts:1, qual:false }
+  ]},
+  C: { teams: [
+    { name: 'Brasil', p:2, w:2, d:0, l:0, gf:5, ga:1, gd:4, pts:6, qual:true },
+    { name: 'Escocia', p:2, w:1, d:0, l:1, gf:3, ga:2, gd:1, pts:3, qual:false },
+    { name: 'Haití', p:2, w:1, d:0, l:1, gf:2, ga:4, gd:-2, pts:3, qual:false },
+    { name: 'Marruecos', p:2, w:0, d:0, l:2, gf:1, ga:4, gd:-3, pts:0, qual:false }
+  ]},
+  D: { teams: [
+    { name: 'Francia', p:2, w:2, d:0, l:0, gf:5, ga:1, gd:4, pts:6, qual:true },
+    { name: 'Irak', p:2, w:1, d:0, l:1, gf:4, ga:4, gd:0, pts:3, qual:false },
+    { name: 'Arabia Saudita', p:2, w:1, d:0, l:1, gf:2, ga:2, gd:0, pts:3, qual:false },
+    { name: 'Nueva Zelanda', p:2, w:0, d:0, l:2, gf:1, ga:5, gd:-4, pts:0, qual:false }
+  ]},
+  E: { teams: [
+    { name: 'Colombia', p:2, w:2, d:0, l:0, gf:4, ga:1, gd:3, pts:6, qual:true },
+    { name: 'RD Congo', p:2, w:1, d:0, l:1, gf:3, ga:2, gd:1, pts:3, qual:false },
+    { name: 'Panamá', p:2, w:1, d:0, l:1, gf:3, ga:2, gd:1, pts:3, qual:false },
+    { name: 'Croacia', p:2, w:0, d:0, l:2, gf:0, ga:4, gd:-4, pts:0, qual:false }
+  ]},
+  F: { teams: [
+    { name: 'Inglaterra', p:2, w:1, d:1, l:0, gf:3, ga:1, gd:2, pts:4, qual:true },
+    { name: 'Ghana', p:2, w:1, d:1, l:0, gf:5, ga:3, gd:2, pts:4, qual:false },
+    { name: 'Portugal', p:2, w:1, d:0, l:1, gf:6, ga:4, gd:2, pts:3, qual:false },
+    { name: 'Uzbekistán', p:2, w:0, d:0, l:2, gf:0, ga:6, gd:-6, pts:0, qual:false }
+  ]},
+  G: { teams: [
+    { name: 'España', p:2, w:2, d:0, l:0, gf:7, ga:1, gd:6, pts:6, qual:true },
+    { name: 'Japón', p:2, w:2, d:0, l:0, gf:6, ga:1, gd:5, pts:6, qual:true },
+    { name: 'Túnez', p:2, w:0, d:0, l:2, gf:1, ga:6, gd:-5, pts:0, qual:false },
+    { name: 'Curazao', p:2, w:0, d:0, l:2, gf:0, ga:6, gd:-6, pts:0, qual:false }
+  ]},
+  H: { teams: [
+    { name: 'Alemania', p:2, w:2, d:0, l:0, gf:5, ga:2, gd:3, pts:6, qual:true },
+    { name: 'Costa de Marfil', p:2, w:1, d:0, l:1, gf:4, ga:3, gd:1, pts:3, qual:false },
+    { name: 'Argentina', p:1, w:1, d:0, l:0, gf:2, ga:0, gd:2, pts:3, qual:false },
+    { name: 'Austria', p:1, w:0, d:0, l:1, gf:0, ga:2, gd:-2, pts:0, qual:false }
+  ]},
+  I: { teams: [
+    { name: 'Países Bajos', p:2, w:2, d:0, l:0, gf:8, ga:2, gd:6, pts:6, qual:true },
+    { name: 'Suecia', p:2, w:1, d:0, l:1, gf:3, ga:6, gd:-3, pts:3, qual:false },
+    { name: 'Noruega', p:1, w:1, d:0, l:0, gf:3, ga:2, gd:1, pts:3, qual:false },
+    { name: 'Senegal', p:1, w:0, d:0, l:1, gf:2, ga:3, gd:-1, pts:0, qual:false }
+  ]},
+  J: { teams: [
+    { name: 'Bélgica', p:2, w:1, d:1, l:0, gf:3, ga:1, gd:2, pts:4, qual:true },
+    { name: 'Irán', p:2, w:0, d:2, l:0, gf:1, ga:1, gd:0, pts:2, qual:false },
+    { name: 'Ecuador', p:1, w:0, d:1, l:0, gf:0, ga:0, gd:0, pts:1, qual:false },
+    { name: 'Curaçao', p:1, w:0, d:0, l:1, gf:0, ga:2, gd:-2, pts:0, qual:false }
+  ]},
+  K: { teams: [
+    { name: 'Uruguay', p:1, w:0, d:1, l:0, gf:2, ga:2, gd:0, pts:1, qual:false },
+    { name: 'Cabo Verde', p:1, w:0, d:1, l:0, gf:2, ga:2, gd:0, pts:1, qual:false },
+    { name: 'Turquía', p:1, w:0, d:0, l:1, gf:0, ga:1, gd:-1, pts:0, qual:false },
+    { name: 'Paraguay', p:1, w:1, d:0, l:0, gf:1, ga:0, gd:1, pts:3, qual:false }
+  ]},
+  L: { teams: [
+    { name: 'EE.UU.', p:2, w:2, d:0, l:0, gf:5, ga:1, gd:4, pts:6, qual:true },
+    { name: 'Argelia', p:2, w:1, d:0, l:1, gf:3, ga:3, gd:0, pts:3, qual:false },
+    { name: 'Australia', p:2, w:0, d:0, l:2, gf:1, ga:4, gd:-3, pts:0, qual:false },
+    { name: 'Jordania', p:2, w:0, d:0, l:2, gf:1, ga:4, gd:-3, pts:0, qual:false }
+  ]}
+};
+
+// ============ FIFA RANKINGS ============
+const FIFA_RANKINGS = {
+  'Argentina': { rank:1, rating:1883 }, 'Francia': { rank:2, rating:1859 },
+  'Brasil': { rank:3, rating:1845 }, 'Inglaterra': { rank:4, rating:1813 },
+  'Bélgica': { rank:5, rating:1793 }, 'Países Bajos': { rank:6, rating:1758 },
+  'Portugal': { rank:7, rating:1749 }, 'España': { rank:8, rating:1732 },
+  'Croacia': { rank:9, rating:1728 }, 'Alemania': { rank:11, rating:1714 },
+  'Uruguay': { rank:13, rating:1695 }, 'Suiza': { rank:14, rating:1686 },
+  'Colombia': { rank:15, rating:1675 }, 'México': { rank:16, rating:1662 },
+  'Japón': { rank:17, rating:1648 }, 'Suecia': { rank:18, rating:1635 },
+  'Senegal': { rank:19, rating:1628 }, 'Irán': { rank:20, rating:1620 },
+  'Corea del Sur': { rank:21, rating:1610 }, 'EE.UU.': { rank:22, rating:1605 },
+  'Australia': { rank:23, rating:1595 }, 'Canadá': { rank:24, rating:1588 },
+  'Noruega': { rank:25, rating:1580 }, 'Ecuador': { rank:26, rating:1572 },
+  'Turquía': { rank:27, rating:1565 }, 'Argelia': { rank:29, rating:1548 },
+  'Paraguay': { rank:30, rating:1542 }, 'Costa de Marfil': { rank:31, rating:1535 },
+  'Ghana': { rank:32, rating:1528 }, 'Escocia': { rank:33, rating:1520 },
+  'Rep. Checa': { rank:34, rating:1512 }, 'Túnez': { rank:35, rating:1505 },
+  'Austria': { rank:36, rating:1498 }, 'Irak': { rank:37, rating:1485 },
+  'Bosnia y Herz.': { rank:38, rating:1478 }, 'Cabo Verde': { rank:39, rating:1470 },
+  'Panamá': { rank:40, rating:1462 }, 'Sudáfrica': { rank:41, rating:1455 },
+  'Arabia Saudita': { rank:42, rating:1448 }, 'RD Congo': { rank:43, rating:1440 },
+  'Nueva Zelanda': { rank:44, rating:1432 }, 'Haití': { rank:45, rating:1425 },
+  'Jordania': { rank:46, rating:1418 }, 'Qatar': { rank:47, rating:1410 },
+  'Curazao': { rank:48, rating:1400 }, 'Curaçao': { rank:48, rating:1400 }
+};
+
+// ============ TODAY'S MATCHES (June 24) ============
+const TODAYS_MATCHES = [
+  { home: 'Bosnia y Herz.', away: 'Qatar', time: '15:00', status: 'live', stage: 'Grupo B', prediction: { h:62, d:22, a:16 } },
+  { home: 'Suiza', away: 'Canadá', time: '15:00', status: 'live', stage: 'Grupo B', prediction: { h:38, d:27, a:35 } },
+  { home: 'Escocia', away: 'Brasil', time: '18:00', status: 'upcoming', stage: 'Grupo C', prediction: { h:10, d:18, a:72 } },
+  { home: 'Marruecos', away: 'Haití', time: '18:00', status: 'upcoming', stage: 'Grupo C', prediction: { h:55, d:25, a:20 } },
+  { home: 'Argentina', away: 'Jordania', time: '21:00', status: 'upcoming', stage: 'Grupo H', prediction: { h:88, d:8, a:4 } },
+  { home: 'Austria', away: 'Alemania', time: '21:00', status: 'upcoming', stage: 'Grupo H', prediction: { h:22, d:25, a:53 } },
+  { home: 'Ecuador', away: 'Bélgica', time: '21:00', status: 'upcoming', stage: 'Grupo J', prediction: { h:25, d:28, a:47 } },
+  { home: 'Uruguay', away: 'Paraguay', time: '21:00', status: 'upcoming', stage: 'Grupo K', prediction: { h:48, d:28, a:24 } }
+];
+
+const RECENT_RESULTS = [
+  { home: 'Argentina', away: 'Austria', score: '2-0', stage: 'Grupo H' },
+  { home: 'Portugal', away: 'Uzbekistán', score: '5-0', stage: 'Grupo F' },
+  { home: 'Francia', away: 'Irak', score: '3-0', stage: 'Grupo D' },
+  { home: 'España', away: 'Arabia Saudita', score: '4-0', stage: 'Grupo G' },
+  { home: 'Inglaterra', away: 'Ghana', score: '0-0', stage: 'Grupo F' },
+  { home: 'Jordania', away: 'Argelia', score: '1-2', stage: 'Grupo L' },
+  { home: 'Alemania', away: 'Costa de Marfil', score: '2-1', stage: 'Grupo H' },
+  { home: 'Países Bajos', away: 'Suecia', score: '5-1', stage: 'Grupo I' },
+  { home: 'Colombia', away: 'RD Congo', score: '1-0', stage: 'Grupo E' },
+  { home: 'Noruega', away: 'Senegal', score: '3-2', stage: 'Grupo I' },
+  { home: 'Japón', away: 'Túnez', score: '4-0', stage: 'Grupo G' },
+  { home: 'Bélgica', away: 'Irán', score: '0-0', stage: 'Grupo J' },
+  { home: 'EE.UU.', away: 'Australia', score: '2-0', stage: 'Grupo L' }
+];
+
+// ============ RENDER GROUPS ============
+function renderGroups() {
+  const container = document.getElementById('groupsContainer');
+  let html = '';
+  let qualCount = 0, playedCount = 0, totalGoals = 0;
+
+  Object.entries(GROUPS).forEach(([letter, group]) => {
+    html += '<div class="group-card animate-in"><h3>Grupo <span class="group-letter">' + letter + '</span></h3><table class="group-table"><thead><tr><th>#</th><th>Equipo</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>';
+    group.teams.forEach(function(t, i) {
+      var pos = i + 1;
+      var qualClass = t.qual ? 'qualified' : '';
+      var posDisplay = t.qual ? '<span class="pos-badge">&#10003;</span>' : pos;
+      html += '<tr class="' + qualClass + '"><td>' + posDisplay + '</td><td>' + t.name + '</td><td>' + t.p + '</td><td>' + t.w + '</td><td>' + t.d + '</td><td>' + t.l + '</td><td>' + t.gf + '</td><td>' + t.ga + '</td><td>' + (t.gd > 0 ? '+' : '') + t.gd + '</td><td><strong>' + t.pts + '</strong></td></tr>';
+      if (t.qual) qualCount++;
+      playedCount += t.p;
+      totalGoals += t.gf;
+    });
+    html += '</tbody></table></div>';
+  });
+
+  container.innerHTML = html;
+  document.getElementById('qualifiedCount').textContent = qualCount;
+  document.getElementById('playedCount').textContent = playedCount;
+  document.getElementById('avgGoals').textContent = playedCount > 0 ? (totalGoals / playedCount).toFixed(2) : '\u2014';
+}
+
+// ============ RENDER MATCHES ============
+function renderMatches() {
+  var todayContainer = document.getElementById('todaysMatches');
+  var html = '';
+
+  TODAYS_MATCHES.forEach(function(m) {
+    var statusClass = m.status;
+    var statusLabel = m.status === 'live' ? '\uD83D\uDD34 EN VIVO' : m.status === 'upcoming' ? '\u23F3 Pr\u00F3ximo' : '\u2705 Finalizado';
+    var homeColor = '#4a7fd4';
+    var awayColor = '#ff6b35';
+
+    html += '<div class="match-card animate-in">';
+    html += '<div class="teams">' + m.home + ' <span class="vs">vs</span> ' + m.away + '</div>';
+    html += '<div style="min-width:120px;font-size:12px;color:#667;">' + m.stage + ' \u00B7 ' + m.time + '</div>';
+    html += '<div class="match-status ' + statusClass + '">' + statusLabel + '</div>';
+    html += '<div class="prob-bar">';
+    html += '<div class="prob-row"><span style="color:' + homeColor + '">' + m.home + '</span><div class="bar"><div class="bar-fill" style="width:' + m.prediction.h + '%;background:' + homeColor + '"></div></div><span class="pct">' + m.prediction.h + '%</span></div>';
+    html += '<div class="prob-row"><span style="color:#8899aa">Empate</span><div class="bar"><div class="bar-fill" style="width:' + m.prediction.d + '%;background:#667"></div></div><span class="pct">' + m.prediction.d + '%</span></div>';
+    html += '<div class="prob-row"><span style="color:' + awayColor + '">' + m.away + '</span><div class="bar"><div class="bar-fill" style="width:' + m.prediction.a + '%;background:' + awayColor + '"></div></div><span class="pct">' + m.prediction.a + '%</span></div>';
+    html += '</div></div>';
+  });
+
+  todayContainer.innerHTML = html;
+
+  var recentContainer = document.getElementById('recentResults');
+  var recentHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">';
+  RECENT_RESULTS.forEach(function(m) {
+    var parts = m.score.split('-');
+    var hG = parseInt(parts[0]), aG = parseInt(parts[1]);
+    var isFavorite = hG > aG;
+    recentHtml += '<div style="background:#0f1923;padding:12px 16px;border-radius:8px;border:1px solid #1a2d44;font-size:13px;">';
+    recentHtml += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    recentHtml += '<span style="font-weight:600">' + m.home + '</span>';
+    recentHtml += '<span style="font-size:20px;font-weight:800;color:' + (isFavorite ? '#0c6' : '#e44') + '">' + m.score + '</span>';
+    recentHtml += '<span style="font-weight:600">' + m.away + '</span>';
+    recentHtml += '</div><div style="font-size:11px;color:#667;text-align:center;margin-top:4px;">' + m.stage + '</div></div>';
+  });
+  recentHtml += '</div>';
+  recentContainer.innerHTML = recentHtml;
+}
+
+// ============ RENDER RANKINGS ============
+function renderRankings() {
+  var container = document.getElementById('rankingsList');
+  var html = '';
+  var sorted = Object.keys(FIFA_RANKINGS).sort(function(a, b) { return FIFA_RANKINGS[a].rank - FIFA_RANKINGS[b].rank; });
+  sorted.forEach(function(name) {
+    var info = FIFA_RANKINGS[name];
+    html += '<div class="ranking-card animate-in">';
+    html += '<div class="rank-num">#' + info.rank + '</div>';
+    html += '<div class="team-name">' + name + '</div>';
+    html += '<div class="rating">' + info.rating + ' pts</div>';
+    html += '<input class="odds-input" id="odds-' + name + '" placeholder="Cuota" oninput="checkRankingValue(\'' + name.replace(/'/g, "\\'") + '\')">';
+    html += '<span id="value-' + name + '"></span></div>';
+  });
+  container.innerHTML = html;
+}
+
+function checkRankingValue(team) {
+  var oddsInput = document.getElementById('odds-' + team);
+  var valueSpan = document.getElementById('value-' + team);
+  var odds = parseFloat(oddsInput.value);
+  if (!odds || odds < 1.01) { valueSpan.innerHTML = ''; return; }
+  var rank = FIFA_RANKINGS[team];
+  if (!rank) return;
+  var implicitProb = 1 / odds;
+  var estimatedProb = Math.min(0.95, Math.max(0.05, rank.rating / 2100));
+  if (implicitProb < estimatedProb) {
+    var edge = ((1/implicitProb) - (1/estimatedProb)) / (1/estimatedProb) * 100;
+    valueSpan.innerHTML = '<span class="value-badge good">\u2705 Value +' + edge.toFixed(1) + '%</span>';
+  } else {
+    var edge = (implicitProb - estimatedProb) * 100;
+    valueSpan.innerHTML = '<span class="value-badge bad">\u274C No value (-' + edge.toFixed(1) + '%)</span>';
+  }
+}
+
+// ============ VALUE BET CALCULATOR ============
+function calcValueBet() {
+  var oddsH = parseFloat(document.getElementById('vbOddsHome').value);
+  var oddsD = parseFloat(document.getElementById('vbOddsDraw').value);
+  var oddsA = parseFloat(document.getElementById('vbOddsAway').value);
+  var probH = parseFloat(document.getElementById('vbProbHome').value) / 100;
+  var probD = parseFloat(document.getElementById('vbProbDraw').value) / 100;
+  var probA = parseFloat(document.getElementById('vbProbAway').value) / 100;
+  var kellyPct = parseFloat(document.getElementById('vbKelly').value) || 2;
+
+  var totalProb = probH + probD + probA;
+  if (totalProb > 1.01 || totalProb < 0.99) {
+    probH /= totalProb; probD /= totalProb; probA /= totalProb;
+  }
+
+  var impProbH = 1 / oddsH, impProbD = 1 / oddsD, impProbA = 1 / oddsA;
+  var margin = impProbH + impProbD + impProbA - 1;
+  var valueH = (oddsH * probH) - 1, valueD = (oddsD * probD) - 1, valueA = (oddsA * probA) - 1;
+
+  var outcomes = [
+    { label: 'Local', prob: probH, odds: oddsH, value: valueH, impProb: impProbH },
+    { label: 'Empate', prob: probD, odds: oddsD, value: valueD, impProb: impProbD },
+    { label: 'Visitante', prob: probA, odds: oddsA, value: valueA, impProb: impProbA }
+  ];
+  var best = outcomes.reduce(function(a, b) { return a.value > b.value ? a : b; });
+
+  var container = document.getElementById('vbResults');
+  var content = document.getElementById('vbResultContent');
+  container.style.display = 'block';
+
+  var html = '';
+  if (best.value > 0.05) html += '<div class="result-card result-good">';
+  else if (best.value > 0) html += '<div class="result-card result-warn">';
+  else html += '<div class="result-card result-bad">';
+
+  html += '<h4>' + (best.value > 0.05 ? '\u2705 \u00A1Value Bet Encontrado!' : best.value > 0 ? '\u26A0\uFE0F Value marginal' : '\u274C No hay value \u2014 No apuestes') + '</h4>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+  outcomes.forEach(function(o) {
+    var isBest = o === best && o.value > 0;
+    html += '<div style="background:#0a0e17;padding:12px;border-radius:8px;border:1px solid ' + (isBest ? '#0c6' : '#1a2d44') + '">';
+    html += '<div style="font-size:12px;color:#667;">' + o.label + '</div>';
+    html += '<div style="font-size:22px;font-weight:700;color:' + (isBest ? '#0c6' : o.value > 0 ? '#cc0' : '#e44') + '">' + (o.value * 100).toFixed(1) + '%</div>';
+    html += '<div style="font-size:11px;color:#667;">Cuota ' + o.odds.toFixed(2) + ' \u00B7 Real ' + (o.prob * 100).toFixed(1) + '% \u00B7 Imp ' + (o.impProb * 100).toFixed(1) + '%</div></div>';
+  });
+  html += '</div>';
+
+  if (best.value > 0) {
+    var kellyRaw = best.value / (best.odds - 1);
+    var kellyFrac = kellyRaw * (kellyPct / 100);
+    html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #1a2d44;">';
+    html += '<div style="font-size:12px;color:#667;">\uD83D\uDCD0 Apuesta sugerida (Kelly ' + kellyPct + '%)</div>';
+    html += '<div style="font-size:20px;font-weight:700;color:#f0c040;">' + (kellyFrac * 100).toFixed(2) + '% del bankroll</div>';
+    html += '<div style="font-size:11px;color:#667;">Kelly completo: ' + (kellyRaw * 100).toFixed(2) + '%</div></div>';
+  }
+
+  html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #1a2d44;">';
+  html += '<div style="font-size:12px;color:#667;">\uD83D\uDCCA Margen de la casa (vig): <strong style="color:#ff6b35">' + (margin * 100).toFixed(2) + '%</strong></div></div>';
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+// ============ BANKROLL MANAGER ============
+function calcBankroll() {
+  var bankroll = parseFloat(document.getElementById('brAmount').value) || 1000;
+  var odds = parseFloat(document.getElementById('brOdds').value);
+  var prob = (parseFloat(document.getElementById('brProb').value) || 0) / 100;
+  var fraction = (parseFloat(document.getElementById('brFraction').value) || 50) / 100;
+  var container = document.getElementById('brResult');
+  container.style.display = 'block';
+
+  if (!odds || odds < 1.01 || !prob || prob <= 0) {
+    container.innerHTML = '<div class="result-card result-bad"><h4>\u26A0\uFE0F Complet\u00E1 todos los campos</h4></div>';
+    return;
+  }
+
+  var edge = (odds * prob) - 1;
+  var kellyPct = edge / (odds - 1);
+  var kellyFrac = kellyPct * fraction;
+  var stake = bankroll * kellyFrac;
+  var maxStake = bankroll * 0.05;
+  var html = '';
+
+  if (edge <= 0) {
+    html = '<div class="result-card result-bad"><h4>\u274C No hay edge positivo</h4>';
+    html += '<div class="detail">Tu probabilidad (' + (prob*100).toFixed(1) + '%) no supera la impl\u00EDcita de la cuota (' + (1/odds*100).toFixed(1) + '%). No apuestes.</div></div>';
+  } else {
+    var finalStake = Math.min(stake, maxStake);
+    html = '<div class="result-card result-good"><h4>\u2705 Edge positivo: <span class="big-num positive">+' + (edge * 100).toFixed(1) + '%</span></h4>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">';
+    html += '<div style="background:#0a0e17;padding:12px;border-radius:8px;"><div style="font-size:12px;color:#667;">Apuesta sugerida</div>';
+    html += '<div style="font-size:24px;font-weight:700;color:#0c6">$' + finalStake.toFixed(2) + '</div>';
+    html += '<div style="font-size:11px;color:#667;">' + (kellyFrac * 100).toFixed(2) + '% del bankroll</div></div>';
+    html += '<div style="background:#0a0e17;padding:12px;border-radius:8px;"><div style="font-size:12px;color:#667;">Ganancia potencial</div>';
+    html += '<div style="font-size:24px;font-weight:700;color:#f0c040">$' + (finalStake * (odds - 1)).toFixed(2) + '</div>';
+    html += '<div style="font-size:11px;color:#667;">Bankroll post-apuesta: $' + (bankroll + finalStake * (odds - 1)).toFixed(2) + '</div></div></div>';
+    html += '<div style="margin-top:12px;font-size:12px;color:#667;">';
+    html += '<strong>\u26A0\uFE0F L\u00EDmite de seguridad:</strong> 5% del bankroll = $' + maxStake.toFixed(2);
+    if (stake > maxStake) html += ' <span style="color:#f0c040;">(apuesta reducida de $' + stake.toFixed(2) + ')</span>';
+    html += '</div>';
+    html += '<div style="margin-top:8px;"><div class="bar-container"><div class="bar-fill" style="width:' + Math.min(100, kellyFrac * 1000) + '%;background:linear-gradient(90deg,#0c6,#6c0)"></div></div></div></div>';
+  }
+  container.innerHTML = html;
+}
+
+// ============ TAB SWITCHING ============
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  var tabMap = { groups:0, value:1, matches:2, rankings:3, bankroll:4 };
+  document.querySelectorAll('.tab')[tabMap[tab]].classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', function() {
+  renderGroups();
+  renderMatches();
+  renderRankings();
+});
+</script>
+</body>
+</html>
